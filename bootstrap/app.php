@@ -41,6 +41,59 @@ $app->singleton(
     App\Exceptions\Handler::class
 );
 
+
+//------------------ START HERE
+
+// Laravel 5.6 이상부터 log channel 에 cli 채널 추가하면 됨. (logging.php 참고)
+
+
+//------------------------
+// Laravel 5.5 이하
+
+// isolate artisan console log and laravel service log
+// See: https://stackoverflow.com/questions/27674597/laravel-daily-log-created-with-wrong-permissions
+$app->configureMonologUsing(function(Monolog\Logger $monolog) {
+    // default file name
+    $filename = storage_path('logs/laravel.log');
+
+    $sapi = php_sapi_name();
+
+    // if running on the command line(php artisan only, except cliserver mode), to  change log file name.
+    if ($sapi == 'cli') {
+        $filename = storage_path('logs/laravel-cli.log');
+    }
+
+    // The maximal amount of files to keep (0 means unlimited)
+    $maxFiles = config('app.log_max_files', 0);
+    $levelString = config('app.log_level', 'debug');
+
+    $levels = [
+        'debug'     => \Monolog\Logger::DEBUG,
+        'info'      => \Monolog\Logger::INFO,
+        'notice'    => \Monolog\Logger::NOTICE,
+        'warning'   => \Monolog\Logger::WARNING,
+        'error'     => \Monolog\Logger::ERROR,
+        'critical'  => \Monolog\Logger::CRITICAL,
+        'alert'     => \Monolog\Logger::ALERT,
+        'emergency' => \Monolog\Logger::EMERGENCY,
+    ];
+
+    $level = \Monolog\Logger::INFO;
+
+    if (isset($levels[$levelString])) {
+        $level = $levels[$levelString];
+    }
+    
+    // default file permission.
+    $permission = 0644;
+
+    $handler = new Monolog\Handler\RotatingFileHandler($filename, $maxFiles, $level, true, $permission);
+    $monolog->pushHandler($handler);
+});
+//-------------------- END HERE
+
+
+
 /*
 |--------------------------------------------------------------------------
 | Return The Application
